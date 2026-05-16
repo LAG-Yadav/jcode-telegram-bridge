@@ -58,10 +58,6 @@ POLL_INTERVAL = float(os.environ.get("RESPONSE_POLL_INTERVAL", "1.5"))
 
 os.makedirs(DATA_DIR, exist_ok=True)
 
-# ─── STATE ───────────────────────────────────────────────────
-_last_known_response = None
-_response_lock = threading.Lock()
-
 def log(msg):
     print(f"[{time.strftime('%H:%M:%S')}] {msg}", flush=True)
 
@@ -233,9 +229,13 @@ def get_last_response():
 
 # ─── RESPONSE WATCHER ────────────────────────────────────────
 
+_active_chats = set()  # chat_ids waiting for responses
+_response_lock = threading.Lock()
+_last_seen_response = None
+
 def response_watcher():
-    """Background thread: watches for new Jcode responses."""
-    global _last_known_response
+    """Background thread: watches for new Jcode responses and auto-sends to Telegram."""
+    global _last_seen_response
     seen = set()
     
     log(f"📡 Watching for Jcode responses every {POLL_INTERVAL}s")
@@ -245,12 +245,16 @@ def response_watcher():
             resp = get_last_response()
             if resp and resp not in seen:
                 seen.add(resp)
-                # Keep seen set bounded
                 if len(seen) > 100:
                     seen = set(list(seen)[-50:])
                 
                 with _response_lock:
-                    _last_known_response = resp
+                    _last_seen_response = resp
+                    
+                    # Auto-send to all active Telegram chats
+                    if _active_chats:
+                        for cid in list(_active_chats):
+                            send_message(cid, resp)
             
             time.sleep(POLL_INTERVAL)
         except Exception as e:
@@ -260,39 +264,21 @@ def response_watcher():
 # ─── MESSAGE HANDLER ─────────────────────────────────────────
 
 def handle_message(user_name, text, chat_id):
-    """Inject message into Jcode and wait for a response to send back."""
-    global _last_known_response
+    """Inject message into Jcode and acknowledge immediately (no blocking)."""
+    global _last_seen_response
     
+    # Register this chat for auto-response delivery
     with _response_lock:
-        before = _last_known_response
+        _active_chats.add(chat_id)
+        before = _last_seen_response
     
-    # Show typing on Telegram
-    send_typing(chat_id)
+    # Send instant acknowledgment
+    send_message(chat_id, f"📩 Message received from <b>{user_name}</b> — Jcode is processing it now. Responses will appear here automatically.")
     
     # Inject into Jcode
     inject_into_jcode(user_name, text)
     
-    # Poll until a new response appears
-    waited = 0
-    max_wait = int(os.environ.get("RESPONSE_TIMEOUT", "600"))  # default 10 min for long tasks
-    thinking_interval = 15  # send a "thinking..." ping every 15s
-    
-    while waited < max_wait:
-        if waited > 0 and waited % thinking_interval == 0:
-            send_typing(chat_id)  # shows "typing..." indicator on Telegram
-        
-        time.sleep(2)
-        waited += 2
-        
-        with _response_lock:
-            current = _last_known_response
-        
-        if current and current != before and current.strip():
-            log(f"📤 New response detected, sending to Telegram...")
-            send_message(chat_id, current)
-            return True
-    
-    log(f"⏱️ Timeout after {max_wait}s waiting for Jcode response")
+    log(f"✅ Acknowledged to {chat_id}, watching for responses...")
 
 # ─── OFFSET PERSISTENCE ──────────────────────────────────────
 

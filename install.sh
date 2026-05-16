@@ -68,6 +68,12 @@ fi
 
 chmod +x "$BIN_DIR/"*
 
+# Copy .env.example to .env if .env doesn't exist yet
+if [ ! -f "$INSTALL_DIR/.env" ] && [ -f "$INSTALL_DIR/.env.example" ]; then
+    cp "$INSTALL_DIR/.env.example" "$INSTALL_DIR/.env"
+    echo "ℹ️ Created $INSTALL_DIR/.env — edit it with your bot token"
+fi
+
 # Add to PATH
 if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
     SHELL_CONFIG="$HOME/.bashrc"
@@ -91,7 +97,6 @@ echo "1. Create a Telegram bot via @BotFather and get your token"
 echo "   See: https://t.me/botfather"
 echo ""
 echo "2. Configure your bot token:"
-echo "   cp $INSTALL_DIR/.env.example $INSTALL_DIR/.env"
 echo "   nano $INSTALL_DIR/.env"
 echo "   # Set TELEGRAM_BOT_TOKEN=your_token_here"
 echo ""

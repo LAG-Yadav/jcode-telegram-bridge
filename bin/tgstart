@@ -27,7 +27,7 @@ if not os.path.exists(BRIDGE_SCRIPT):
         BRIDGE_SCRIPT = os.path.abspath(same_dir)
     else:
         print("❌ bridge.py not found. Install the bridge first.")
-        print("   See: https://github.com/1jehuang/jcode-telegram-bridge")
+        print("   See: https://github.com/LAG-Yadav/jcode-telegram-bridge")
         sys.exit(1)
 
 import subprocess

@@ -50,9 +50,9 @@ cp ~/.jcode/telegram/bin/* ~/.jcode/bin/
 echo 'export PATH="$PATH:$HOME/.jcode/bin"' >> ~/.bashrc
 source ~/.bashrc
 
-# Configure
-cp ~/.jcode/telegram/.env.example ~/.jcode/telegram/.env
-# Edit .env with your bot token
+# Configure (installer creates .env automatically)
+nano ~/.jcode/telegram/.env
+# Set TELEGRAM_BOT_TOKEN=your_token_here
 ```
 
 ## Configuration

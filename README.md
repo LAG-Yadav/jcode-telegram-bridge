@@ -35,19 +35,16 @@ No subprocess spawning. No separate AI provider config. No webhooks needed. Just
 ### Quick Install (one-liner)
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/1jehuang/jcode-telegram-bridge/main/install.sh)
+bash <(curl -s https://raw.githubusercontent.com/LAG-Yadav/jcode-telegram-bridge/main/install.sh)
 ```
 
 ### Manual Install
 
 ```bash
-# Clone
-git clone https://github.com/1jehuang/jcode-telegram-bridge.git ~/.jcode/telegram
+# Clone into jcode data directory
+git clone https://github.com/LAG-Yadav/jcode-telegram-bridge.git ~/.jcode/telegram
 
-# Copy bridge
-cp ~/.jcode/telegram/bridge.py ~/.jcode/telegram/
-
-# Make helpers accessible
+# Make helper scripts accessible
 mkdir -p ~/.jcode/bin
 cp ~/.jcode/telegram/bin/* ~/.jcode/bin/
 echo 'export PATH="$PATH:$HOME/.jcode/bin"' >> ~/.bashrc

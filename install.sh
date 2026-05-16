@@ -2,9 +2,9 @@
 set -euo pipefail
 
 # Jcode Telegram Bridge - Installer
-# Run: bash <(curl -s https://raw.githubusercontent.com/1jehuang/jcode-telegram-bridge/main/install.sh)
+# Run: bash <(curl -s https://raw.githubusercontent.com/LAG-Yadav/jcode-telegram-bridge/main/install.sh)
 
-REPO="https://github.com/1jehuang/jcode-telegram-bridge.git"
+REPO="https://github.com/LAG-Yadav/jcode-telegram-bridge.git"
 INSTALL_DIR="$HOME/.jcode/telegram"
 BIN_DIR="$HOME/.jcode/bin"
 
@@ -38,7 +38,7 @@ fi
 # Jcode
 if ! command -v jcode &>/dev/null; then
     echo "⚠️ jcode not found in PATH. The bridge needs Jcode running."
-    echo "   Install from: https://github.com/1jehuang/jcode"
+    echo "   Install from: https://github.com/LAG-Yadav/jcode"
 fi
 
 # Create directories
@@ -57,11 +57,11 @@ if [ "$CLONE_METHOD" = "git" ]; then
     rm -rf "$TMPDIR"
 else
     for file in bridge.py .env.example; do
-        curl -sf "https://raw.githubusercontent.com/1jehuang/jcode-telegram-bridge/main/$file" \
+        curl -sf "https://raw.githubusercontent.com/LAG-Yadav/jcode-telegram-bridge/main/$file" \
             -o "$INSTALL_DIR/$file"
     done
     for file in tgsend tgread tgstatus tgstart; do
-        curl -sf "https://raw.githubusercontent.com/1jehuang/jcode-telegram-bridge/main/bin/$file" \
+        curl -sf "https://raw.githubusercontent.com/LAG-Yadav/jcode-telegram-bridge/main/bin/$file" \
             -o "$BIN_DIR/$file"
     done
 fi

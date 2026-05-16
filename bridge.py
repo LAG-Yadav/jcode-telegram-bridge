@@ -8,7 +8,7 @@ Architecture:
 
 No subprocess spawning. No separate AI provider config. Just straight into your session.
 """
-import json, os, sys, time, socket, threading, urllib.request, urllib.error
+import json, os, sys, time, socket, threading, urllib.request, urllib.error, re
 
 sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
@@ -90,9 +90,47 @@ def html_escape(text):
             .replace('"', "&quot;")
     )
 
+def markdown_to_telegram_html(text):
+    """Convert Markdown formatting to Telegram's supported HTML subset.
+    
+    Telegram HTML supports: <b>, <i>, <code>, <pre>, <a href="">
+    We convert common markdown patterns to these tags.
+    """
+    # Must escape HTML entities first (before adding tags)
+    text = html_escape(text)
+    
+    # Bold: **text** or __text__
+    text = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
+    text = re.sub(r'(?<!/)__(.+?)__(?!/)', r'<b>\1</b>', text)
+    
+    # Italic: *text* or _text_ (but not inside words with underscores)
+    text = re.sub(r'(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)', r'<i>\1</i>', text)
+    # Single underscores for italic (word boundaries to avoid snake_case)
+    text = re.sub(r'(?<!\w)_(?!_)(.+?)(?<!\w)_(?!_)', r'<i>\1</i>', text)
+    
+    # Inline code: `text`
+    text = re.sub(r'`(.+?)`', r'<code>\1</code>', text)
+    
+    # Code block: ```text``` or ```language\ntext```
+    text = re.sub(r'```(?:\w+)?\n?(.+?)```', r'<pre>\1</pre>', text, flags=re.DOTALL)
+    
+    # Links: [text](url)
+    text = re.sub(r'\[(.+?)\]\((https?://[^\s)]+)\)', r'<a href="\2">\1</a>', text)
+    
+    # Headers: ### text -> <b>text</b>
+    text = re.sub(r'^#{1,6}\s+(.+?)$', r'<b>\1</b>', text, flags=re.MULTILINE)
+    
+    # List items: - text or * text -> • text
+    text = re.sub(r'^[\s]*[-*]\s+(.+?)$', r'• \1', text, flags=re.MULTILINE)
+    
+    # Numbered lists: 1. text -> just keep as-is
+    text = re.sub(r'^(\s*\d+\.\s+.+?)$', r'\1', text, flags=re.MULTILINE)
+    
+    return text.strip()
+
 def send_message(chat_id, text, parse_mode="HTML"):
-    # Escape HTML entities to prevent Telegram parser failures
-    safe_text = html_escape(text)
+    # Convert Markdown formatting to Telegram-compatible HTML
+    safe_text = markdown_to_telegram_html(text)
     r = tg_api("sendMessage", {"chat_id": chat_id, "text": safe_text, "parse_mode": parse_mode})
     if r.get("ok"):
         with open(SENT_FILE, "a") as f:

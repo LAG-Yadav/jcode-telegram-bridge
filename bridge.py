@@ -13,6 +13,20 @@ import json, os, sys, time, socket, threading, urllib.request, urllib.error
 sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
 
+# ─── AUTO-LOAD .env if present in data dir or script dir ───
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+for _env_dir in (_script_dir, os.path.expanduser("~/.jcode/telegram")):
+    _env_path = os.path.join(_env_dir, ".env")
+    if os.path.exists(_env_path):
+        with open(_env_path) as _f:
+            for _line in _f:
+                _line = _line.strip()
+                if not _line or _line.startswith("#"):
+                    continue
+                if "=" in _line:
+                    _k, _v = _line.split("=", 1)
+                    os.environ.setdefault(_k.strip(), _v.strip())
+
 # ─── CONFIG (from environment) ───────────────────────────────
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 if not BOT_TOKEN:

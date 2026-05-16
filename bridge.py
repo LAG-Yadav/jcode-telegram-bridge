@@ -67,8 +67,19 @@ def tg_api(method, data=None, timeout=15):
     except Exception as e:
         return {"ok": False, "description": str(e)}
 
+def html_escape(text):
+    """Escape HTML entities so Telegram's HTML parser doesn't choke."""
+    return (
+        text.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace('"', "&quot;")
+    )
+
 def send_message(chat_id, text, parse_mode="HTML"):
-    r = tg_api("sendMessage", {"chat_id": chat_id, "text": text, "parse_mode": parse_mode})
+    # Escape HTML entities to prevent Telegram parser failures
+    safe_text = html_escape(text)
+    r = tg_api("sendMessage", {"chat_id": chat_id, "text": safe_text, "parse_mode": parse_mode})
     if r.get("ok"):
         with open(SENT_FILE, "a") as f:
             f.write(json.dumps({
@@ -80,7 +91,20 @@ def send_message(chat_id, text, parse_mode="HTML"):
         log(f"✅ Sent to chat {chat_id}")
         return True
     else:
-        log(f"❌ Send failed: {r.get('description','')}")
+        # Fallback: try plain text if HTML fails
+        log(f"⚠️ HTML failed ({r.get('description','')}), retrying as plain text...")
+        r2 = tg_api("sendMessage", {"chat_id": chat_id, "text": text})
+        if r2.get("ok"):
+            with open(SENT_FILE, "a") as f:
+                f.write(json.dumps({
+                    "chat_id": chat_id,
+                    "message_id": r2["result"]["message_id"],
+                    "text": text[:80],
+                    "time": time.time()
+                }) + "\n")
+            log(f"✅ Sent (plain text) to chat {chat_id}")
+            return True
+        log(f"❌ Send failed: {r2.get('description','')}")
         return False
 
 def send_typing(chat_id):

@@ -1,0 +1,22 @@
+#!/usr/bin/env python3
+"""tgsend - Send a Telegram message via the Jcode bridge."""
+import json, os, sys, time
+RESPONSE_DIR = os.path.expanduser("~/.jcode/telegram/responses")
+if len(sys.argv) < 3:
+    print("Usage: tgsend <chat_id> <message>")
+    print("   or: echo 'msg' | tgsend <chat_id>")
+    sys.exit(1)
+chat_id = int(sys.argv[1])
+if len(sys.argv) > 2:
+    text = " ".join(sys.argv[2:])
+elif not sys.stdin.isatty():
+    text = sys.stdin.read().strip()
+else:
+    print("No message")
+    sys.exit(1)
+resp = {"chat_id": chat_id, "text": text, "parse_mode": "HTML", "timestamp": time.time()}
+rf = os.path.join(RESPONSE_DIR, f"{chat_id}_{int(time.time())}.resp")
+with open(rf + ".new", "w") as f:
+    json.dump(resp, f)
+os.rename(rf + ".new", rf)
+print(f"✅ Queued for {chat_id}: {text[:50]}...")

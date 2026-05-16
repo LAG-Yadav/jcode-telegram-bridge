@@ -274,24 +274,25 @@ def handle_message(user_name, text, chat_id):
     
     # Poll until a new response appears
     waited = 0
-    max_wait = int(os.environ.get("RESPONSE_TIMEOUT", "120"))
+    max_wait = int(os.environ.get("RESPONSE_TIMEOUT", "600"))  # default 10 min for long tasks
+    thinking_interval = 15  # send a "thinking..." ping every 15s
     
     while waited < max_wait:
-        send_typing(chat_id)
-        with _response_lock:
-            current = _last_known_response
-        
-        if current and current != before:
-            log(f"📤 New response detected, sending to Telegram...")
-            send_message(chat_id, current)
-            return True
+        if waited > 0 and waited % thinking_interval == 0:
+            send_typing(chat_id)  # shows "typing..." indicator on Telegram
         
         time.sleep(2)
         waited += 2
+        
+        with _response_lock:
+            current = _last_known_response
+        
+        if current and current != before and current.strip():
+            log(f"📤 New response detected, sending to Telegram...")
+            send_message(chat_id, current)
+            return True
     
     log(f"⏱️ Timeout after {max_wait}s waiting for Jcode response")
-    send_message(chat_id, "⏱️ Jcode didn't respond in time. Try again?")
-    return False
 
 # ─── OFFSET PERSISTENCE ──────────────────────────────────────
 
